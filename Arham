@@ -1,1 +1,78 @@
+#!/usr/bin/env python3
+import subprocess
+import os
+import sys
 
+def run_cmd(cmd, check=True):
+    env = os.environ.copy()
+    env["CUSTOM_VAR"] = "value"
+    result = subprocess.run(
+        cmd,
+        env=env,
+        capture_output=True,
+        text=True
+    )
+    if check and result.returncode != 0:
+        print(result.stderr, file=sys.stderr)
+        sys.exit(result.returncode)
+    return result
+
+def group_exists(name):
+    return run_cmd(["getent", "group", name], check=False).returncode == 0
+
+def user_exists(name):
+    return run_cmd(["id", "-u", name], check=False).returncode == 0
+
+def main():
+    if os.geteuid() != 0:
+        print("Run this script as root (sudo).")
+        sys.exit(1)
+
+    # Get unique group
+    while True:
+        groupname = input("Enter new group name: ").strip()
+        if not groupname:
+            print("Group name cannot be empty.")
+            continue
+        if group_exists(groupname):
+            print(f"Group '{groupname}' already exists, try another.")
+        else:
+            break
+
+    print(f"Creating group '{groupname}'...")
+    run_cmd(["groupadd", groupname])
+
+    # Get unique user
+    while True:
+        username = input("Enter new username: ").strip()
+        if not username:
+            print("Username cannot be empty.")
+            continue
+        if user_exists(username):
+            print(f"User '{username}' already exists, try another.")
+        else:
+            break
+
+    print(f"Creating user '{username}' in group '{groupname}' with Bash shell...")
+    run_cmd(["useradd", "-g", groupname, "-s", "/bin/bash", username])
+
+    print(f"Setting password for '{username}'...")
+    subprocess.run(["passwd", username])  # interactive, no capture
+
+    print(f"Adding '{username}' to group '{groupname}' (supplementary)...")
+    run_cmd(["usermod", "-aG", groupname, username])
+
+    user_dir = "/" + username
+    print(f"Creating directory '{user_dir}'...")
+    if not os.path.exists(user_dir):
+        os.mkdir(user_dir)
+    else:
+        print(f"Directory {user_dir} already exists; reusing.")
+
+    print("\nDone.")
+    print(f"User: {username}")
+    print(f"Group: {groupname}")
+    print(f"Directory: {user_dir}")
+
+if __name__ == "__main__":
+    main()
