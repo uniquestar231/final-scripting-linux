@@ -32,7 +32,7 @@ def main():
         sys.exit(1)
 
 
-    # Get unique group
+
     while True:
         groupname = input("Enter new group name: ").strip()
         if not groupname:
@@ -48,7 +48,6 @@ def main():
     run_cmd(["groupadd", groupname])
 
 
-    # Get unique user
     while True:
         username = input("Enter new username: ").strip()
         if not username:
