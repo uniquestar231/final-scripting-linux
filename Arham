@@ -97,7 +97,7 @@ def main():
     print(f"User: {username}")
     print(f"Group: {groupname}")
     print(f"Directory: {user_dir}")
-
+    
 
 if __name__ == "__main__":
     main()
